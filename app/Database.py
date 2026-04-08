@@ -67,7 +67,7 @@ async def register_file(job_id: str, user_id: int, category: str,
     file_id = gen_id()
     expires_at = None
     if expiry_days:
-        expires_at = datetime.now(timezone.utc) + timedelta(days=expiry_days)
+        expires_at = datetime.utcnow() + timedelta(days=expiry_days)
 
     async with pool.acquire() as conn:
         row = await conn.fetchrow(

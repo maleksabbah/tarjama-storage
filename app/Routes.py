@@ -174,3 +174,10 @@ async def presign_upload(request: Request, user_id: int = None):
         "user_id": uid,
         "expires_in": 3600,
     }
+@router.get("/files/download-by-path")
+async def download_by_path(path: str, request: Request):
+    """Issue a presigned URL for a raw S3 key. Used by frontend when the file
+    isn't registered in the files table (e.g. burned video from subtitle service)."""
+    uid = get_user_id(request)  # auth check — must be logged in
+    url = s3.get_presigned_url(path, expires_in=3600)
+    return {"url": url}

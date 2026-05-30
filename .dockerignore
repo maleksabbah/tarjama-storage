@@ -3,5 +3,3 @@ __pycache__
 .pytest_cache
 .idea
 *.pyc
-Tests.py
-Test.py

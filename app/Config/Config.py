@@ -1,32 +1,27 @@
-# subtitle: app/Config/Config.py
+# storage: app/Config/Config.py
 """
-Subtitle worker config.
+Storage service config.
+File registry (Postgres) + S3/MinIO lifecycle.
+
+NOTE: S3 credentials are read directly from env in Repositories/S3Client.py
+(S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET, S3_REGION,
+S3_PUBLIC_ENDPOINT). This Config holds DB + cleanup settings only.
 """
 import os
 
 
 class Config:
-    # Kafka
-    KAFKA_BOOTSTRAP_SERVERS: str = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
+    # Database
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL",
+        "postgresql+asyncpg://postgres:postgres@postgres:5432/storage_db",
+    )
+    DB_POOL_MIN: int = int(os.getenv("DB_POOL_MIN", "2"))
+    DB_POOL_MAX: int = int(os.getenv("DB_POOL_MAX", "10"))
 
-    # Topics
-    TOPIC_SUBTITLE_TASKS: str = os.getenv("TOPIC_SUBTITLE_TASKS", "tarjama.subtitle.tasks")
-    TOPIC_COMPLETED: str = os.getenv("TOPIC_COMPLETED", "tarjama.completed")
-
-    # Consumer group
-    GROUP_SUBTITLE_WORKER: str = os.getenv("GROUP_SUBTITLE_WORKER", "tarjama.subtitle")
-
-    # Storage
-    STORAGE_URL: str = os.getenv("STORAGE_URL", "http://storage:8002")
-
-    # ffmpeg
-    FFMPEG_PATH: str = os.getenv("FFMPEG_PATH", "ffmpeg")
-
-    # Subtitle styling
-    FONT_SIZE: int = int(os.getenv("SUBTITLE_FONT_SIZE", "24"))
-
-    # Fallback if video_meta.json is missing
-    DEFAULT_FPS: float = float(os.getenv("DEFAULT_FPS", "25.0"))
+    # File lifecycle / cleanup
+    DEFAULT_EXPIRY_DAYS: int = int(os.getenv("DEFAULT_EXPIRY_DAYS", "7"))
+    CLEANUP_INTERVAL_HOURS: int = int(os.getenv("CLEANUP_INTERVAL_HOURS", "6"))
 
 
 config = Config()

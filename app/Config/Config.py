@@ -3,19 +3,29 @@
 Storage service config.
 File registry (Postgres) + S3/MinIO lifecycle.
 
-NOTE: S3 credentials are read directly from env in Repositories/S3Client.py
-(S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET, S3_REGION,
-S3_PUBLIC_ENDPOINT). This Config holds DB + cleanup settings only.
+S3 credentials are read directly from env in Repositories/S3Client.py.
+This Config holds DB + cleanup settings only.
 """
 import os
 
 
+def _async_url(url: str) -> str:
+    """Ensure the URL uses the asyncpg driver for SQLAlchemy async engine."""
+    if url.startswith("postgresql+asyncpg://"):
+        return url
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+    return url
+
+
 class Config:
-    # Database
-    DATABASE_URL: str = os.getenv(
+    # Database (force asyncpg driver regardless of how the env passes it)
+    DATABASE_URL: str = _async_url(os.getenv(
         "DATABASE_URL",
         "postgresql+asyncpg://postgres:postgres@postgres:5432/storage_db",
-    )
+    ))
     DB_POOL_MIN: int = int(os.getenv("DB_POOL_MIN", "2"))
     DB_POOL_MAX: int = int(os.getenv("DB_POOL_MAX", "10"))
 

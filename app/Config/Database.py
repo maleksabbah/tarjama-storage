@@ -1,7 +1,6 @@
 # app/Config/Database.py
 """
 Async SQLAlchemy engine + session factory.
-Replaces the asyncpg pool used in the flat version.
 """
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
@@ -22,6 +21,13 @@ SessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
+
+
+async def init_db() -> None:
+    """Create all tables on startup if they don't exist."""
+    from app.Entities import Base
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 
 async def close_db() -> None:

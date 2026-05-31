@@ -4,16 +4,13 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.Config.Config import config as app_config
 from app.Entities import Base
+from app.Entities import File  # noqa: F401  (ensure table registered)
 
-# Alembic Config object
 config = context.config
-
-# Override URL from app config (so env vars work)
-config.set_main_option("sqlalchemy.url", app_config.DATABASE_URL)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -21,10 +18,13 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def _db_url() -> str:
+    return app_config.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+
+
 def run_migrations_offline() -> None:
-    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url,
+        url=_db_url(),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -39,22 +39,14 @@ def do_run_migrations(connection: Connection) -> None:
         context.run_migrations()
 
 
-async def run_async_migrations() -> None:
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
-    await connectable.dispose()
-
-
-def run_migrations_online() -> None:
-    asyncio.run(run_async_migrations())
+async def run_migrations_online() -> None:
+    engine = create_async_engine(_db_url(), poolclass=pool.NullPool)
+    async with engine.connect() as conn:
+        await conn.run_sync(do_run_migrations)
+    await engine.dispose()
 
 
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    run_migrations_online()
+    asyncio.run(run_migrations_online())
